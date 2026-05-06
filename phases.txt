@@ -1,0 +1,159 @@
+Create a new Flutter project called smart_event_checkin. Set up the pubspec.yaml with these dependencies: provider, hive, hive_flutter, path_provider, qr_code_scanner, uuid, intl, connectivity_plus. Also add hive_generator and build_runner as dev dependencies.
+
+Then create this folder structure inside lib/:
+  models/       (event.dart, participant.dart)
+  screens/      (event_setup_screen.dart, checkin_screen.dart, dashboard_screen.dart, logs_screen.dart)
+  providers/    (event_provider.dart)
+  services/     (hive_service.dart, sync_service.dart)
+  widgets/      (capacity_indicator.dart, stat_card.dart)
+  main.dart
+
+In models/event.dart, create a Hive-compatible Event model with fields: id (String), name (String), dateTime (DateTime), maxCapacity (int), checkedInCount (int).
+
+In models/participant.dart, create a Hive-compatible Participant model with fields: id (String), name (String), eventId (String), isCheckedIn (bool), checkInTime (DateTime?).
+
+Add @HiveType and @HiveField annotations to both models. Use TypeIds 0 and 1 respectively.
+
+
+screen-1
+Build the EventSetupScreen in screens/event_setup_screen.dart.
+
+It should have a Form with these fields:
+- TextFormField for Event Name (required)
+- TextFormField for Max Capacity (number input, required, min 1)
+- A date+time picker row showing selected DateTime with an edit button
+
+On submit, create an Event object with a uuid, save it via the provider, and navigate to the CheckinScreen passing the event.
+
+Style: use a clean card-based layout, MaterialApp with a teal/indigo color scheme. Show a SnackBar on success.
+
+screen-2
+Build the CheckinScreen in screens/checkin_screen.dart.
+
+It receives an Event object. It should have two tabs:
+1. QR Scan tab: uses qr_code_scanner package. On scan, calls provider.checkInParticipant(scannedId, event). Shows result in a banner (green = success, red = error).
+2. Manual Entry tab: a TextField for Participant ID + Name, and a Check In button.
+
+Both tabs must show the same validation result banner with messages like:
+- "Already checked in"
+- "Event at full capacity"
+- "Check-in successful for [name]"
+
+Add a FloatingActionButton to navigate to the Dashboard.
+
+screen 3
+Build the DashboardScreen in screens/dashboard_screen.dart.
+
+It should display:
+- Event name and date at the top
+- Three StatCards: Total Capacity, Checked In, Remaining
+- A LinearProgressIndicator showing checked-in / max capacity
+- A crowd level badge with 3 states:
+    GREEN "Safe" if < 60% full
+    ORANGE "Moderate" if 60–89% full
+    RED "Full" if >= 90% full
+- A button to go to Logs screen
+
+Use Consumer so it updates in real time. StatCard is a reusable widget in widgets/stat_card.dart showing a label + large number.
+
+screen 4
+Build the LogsScreen in screens/logs_screen.dart.
+
+It should:
+- Show a search bar at the top (filter by participant ID or name)
+- Display a ListView of all participants for the current event
+- Each ListTile shows: name, ID, check-in status (checked-in / not yet), and time of entry if checked in
+- Checked-in entries show a green check icon; pending show a grey clock icon
+- Empty state message when no results match the search
+
+Use Consumer for live updates.
+
+main+navigation
+Update main.dart to:
+- Initialize Hive with path_provider
+- Register both HiveAdapters (EventAdapter, ParticipantAdapter)
+- Open Hive boxes named 'events' and 'participants'
+- Wrap MaterialApp with ChangeNotifierProvider
+- Set EventSetupScreen as the home screen
+- Use a teal and deep purple color scheme with useMaterial3: true
+
+logic 
+Build providers/event_provider.dart as a ChangeNotifier class with this logic:
+
+Fields:
+- List events
+- List participants
+- Event? activeEvent
+
+Methods:
+1. createEvent(Event e) — saves to Hive box 'events', sets activeEvent, notifies
+2. loadParticipants(String eventId) — loads from Hive 'participants' box filtered by eventId
+3. CheckInResult checkInParticipant(String participantId, String name, Event event):
+   - Return CheckInResult.alreadyCheckedIn if participant with that id is already checked in
+   - Return CheckInResult.atCapacity if event.checkedInCount >= event.maxCapacity
+   - Return CheckInResult.invalidId if participantId is empty
+   - Otherwise: create Participant, save to Hive, increment event.checkedInCount, save event, notifyListeners, return CheckInResult.success
+4. List searchParticipants(String query) — filter by id or name contains query (case insensitive)
+
+Create an enum CheckInResult { success, alreadyCheckedIn, atCapacity, invalidId }
+
+hive services
+Build services/hive_service.dart as a singleton class HiveService with:
+
+- Box get eventsBox => Hive.box('events')
+- Box get participantsBox => Hive.box('participants')
+- Future saveEvent(Event e) — puts with e.id as key
+- Future saveParticipant(Participant p) — puts with p.id as key
+- List getAllEvents() — returns eventsBox.values.toList()
+- List getParticipantsForEvent(String eventId) — filters by eventId
+- Future clearAll() — clears both boxes (for testing)
+
+storage
+Build services/sync_service.dart using connectivity_plus package.
+
+It should:
+- Use Connectivity() to listen to connectivity changes
+- Expose a Stream isOnline stream
+- When connectivity is restored (goes from offline → online), call a syncPendingData() method
+- syncPendingData() reads all Hive participants where isSynced == false, marks them synced, and prints a log (no real API needed — just simulate with a 500ms delay and Future)
+- Expose bool get currentlyOnline for snapshot checks
+
+Add a bool isSynced field to the Participant model (default false, set true after sync).
+
+Create a reusable OfflineBanner widget in widgets/offline_banner.dart.
+
+It wraps a StreamBuilder listening to SyncService.isOnline.
+- When offline: shows an amber banner at the top saying "Offline — check-ins saved locally"
+- When online: shows a brief green banner "Back online — syncing..." that auto-hides after 3 seconds using a Timer
+
+Add this widget to the top of CheckinScreen and DashboardScreen as a Column child above the main content.
+
+Add final polish to the entire app:
+
+1. In CheckinScreen QR tab, wrap the QRView in a try-catch. If QR plugin throws (camera denied), show a Dialog explaining to grant camera permission.
+
+2. In EventSetupScreen, validate that the selected DateTime is not in the past. Show inline error if it is.
+
+3. In DashboardScreen, add a refresh IconButton in the AppBar that calls provider.loadParticipants(activeEvent.id) to force-reload from Hive.
+
+4. Add a bottom NavigationBar to CheckinScreen with 3 tabs: Check-in, Dashboard, Logs. Use index state to switch between the three screens without losing context.
+
+5. In LogsScreen, add a chip row for filtering: All / Checked In / Pending.
+
+6. Make sure all screens have proper AppBar titles and back navigation where needed.
+
+Add final polish to the entire app:
+
+1. In CheckinScreen QR tab, wrap the QRView in a try-catch. If QR plugin throws (camera denied), show a Dialog explaining to grant camera permission.
+
+2. In EventSetupScreen, validate that the selected DateTime is not in the past. Show inline error if it is.
+
+3. In DashboardScreen, add a refresh IconButton in the AppBar that calls provider.loadParticipants(activeEvent.id) to force-reload from Hive.
+
+4. Add a bottom NavigationBar to CheckinScreen with 3 tabs: Check-in, Dashboard, Logs. Use index state to switch between the three screens without losing context.
+
+5. In LogsScreen, add a chip row for filtering: All / Checked In / Pending.
+
+6. Make sure all screens have proper AppBar titles and back navigation where needed.
+
+
