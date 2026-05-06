@@ -2,6 +2,7 @@ import 'package:hive/hive.dart';
 
 import '../models/event.dart';
 import '../models/participant.dart';
+import 'repo_data_export_service.dart';
 
 class HiveService {
   HiveService._internal();
@@ -14,11 +15,33 @@ class HiveService {
 
   Future<void> saveEvent(Event event) async {
     await eventsBox.put(event.id, event);
+    await RepoDataExportService.instance.appendRecord({
+      'type': 'event',
+      'action': 'save',
+      'id': event.id,
+      'name': event.name,
+      'dateTime': event.dateTime.toIso8601String(),
+      'maxCapacity': event.maxCapacity,
+      'checkedInCount': event.checkedInCount,
+      'managerId': event.managerId,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
   }
 
   Future<void> saveParticipant(Participant participant) async {
     final scopedKey = '${participant.eventId}::${participant.id}';
     await participantsBox.put(scopedKey, participant);
+    await RepoDataExportService.instance.appendRecord({
+      'type': 'participant',
+      'action': 'save',
+      'id': participant.id,
+      'name': participant.name,
+      'eventId': participant.eventId,
+      'isCheckedIn': participant.isCheckedIn,
+      'checkInTime': participant.checkInTime?.toIso8601String(),
+      'isSynced': participant.isSynced,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
   }
 
   List<Event> getAllEvents() => eventsBox.values.toList();
@@ -38,5 +61,10 @@ class HiveService {
   Future<void> clearAll() async {
     await eventsBox.clear();
     await participantsBox.clear();
+    await RepoDataExportService.instance.appendRecord({
+      'type': 'system',
+      'action': 'clearAll',
+      'timestamp': DateTime.now().toIso8601String(),
+    });
   }
 }

@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/user.dart';
+import 'repo_data_export_service.dart';
 
 class AuthService {
   AuthService._();
@@ -69,6 +70,17 @@ class AuthService {
 
     await usersBox.put(user.id, user);
     await sessionBox.put('currentUserId', user.id);
+    await RepoDataExportService.instance.appendRecord({
+      'type': 'user',
+      'action': 'signup',
+      'id': user.id,
+      'name': user.name,
+      'email': user.email,
+      'role': user.role.name,
+      'createdAt': user.createdAt.toIso8601String(),
+      'participantId': user.participantId,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
     return user;
   }
 
@@ -94,11 +106,22 @@ class AuthService {
     }
 
     await sessionBox.put('currentUserId', user.id);
+    await RepoDataExportService.instance.appendRecord({
+      'type': 'session',
+      'action': 'login',
+      'userId': user.id,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
     return user;
   }
 
   Future<void> logout() async {
     await sessionBox.delete('currentUserId');
+    await RepoDataExportService.instance.appendRecord({
+      'type': 'session',
+      'action': 'logout',
+      'timestamp': DateTime.now().toIso8601String(),
+    });
   }
 
   User? getCurrentUser() {
