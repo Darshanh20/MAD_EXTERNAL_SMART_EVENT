@@ -62,7 +62,8 @@ class _LogsScreenState extends State<LogsScreen> {
   Widget _buildBody(BuildContext context) {
     return Consumer<EventProvider>(
       builder: (context, provider, _) {
-        final queriedParticipants = provider.searchParticipants(
+        final queriedParticipants = provider.searchParticipantsForEvent(
+          widget.event.id,
           _searchController.text,
         );
         final participants = queriedParticipants.where((participant) {

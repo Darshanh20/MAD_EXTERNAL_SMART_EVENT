@@ -74,9 +74,46 @@ class EVENTLYApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = ColorScheme.fromSeed(
-      seedColor: Colors.teal,
-    ).copyWith(primary: Colors.teal, secondary: Colors.deepPurple);
+    const background = Color(0xFF0B0C10);
+    const surface = Color(0xFF11141A);
+    const surfaceAlt = Color(0xFF1A1E25);
+    const surfaceMuted = Color(0xFF15181E);
+    const cream = Color(0xFFF3E6C2);
+    const sand = Color(0xFFD9CDB0);
+    const outline = Color(0xFF303642);
+
+    final scheme =
+        ColorScheme.fromSeed(
+          seedColor: cream,
+          brightness: Brightness.dark,
+        ).copyWith(
+          primary: cream,
+          onPrimary: background,
+          primaryContainer: const Color(0xFF2A2418),
+          onPrimaryContainer: cream,
+          secondary: sand,
+          onSecondary: background,
+          secondaryContainer: const Color(0xFF262A31),
+          onSecondaryContainer: cream,
+          tertiary: const Color(0xFF9AA2AE),
+          background: background,
+          onBackground: const Color(0xFFF4F0E6),
+          surface: surface,
+          onSurface: const Color(0xFFF4F0E6),
+          surfaceTint: cream,
+          surfaceContainerLow: const Color(0xFF0F1116),
+          surfaceContainer: surfaceMuted,
+          surfaceContainerHigh: const Color(0xFF171A20),
+          surfaceContainerHighest: surfaceAlt,
+          outline: outline,
+          outlineVariant: const Color(0xFF232933),
+          error: const Color(0xFFFF8B8B),
+          errorContainer: const Color(0xFF3D1F22),
+          onError: background,
+          onErrorContainer: const Color(0xFFFFD6D9),
+          inverseSurface: const Color(0xFFF2EBDD),
+          inversePrimary: const Color(0xFF8C7A58),
+        );
 
     return MaterialApp(
       title: 'EVENTLY',
@@ -84,16 +121,57 @@ class EVENTLYApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: scheme,
         useMaterial3: true,
-        appBarTheme: const AppBarTheme(centerTitle: false),
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: scheme.background,
+        appBarTheme: AppBarTheme(
+          centerTitle: false,
+          backgroundColor: scheme.background,
+          foregroundColor: scheme.onBackground,
+          surfaceTintColor: scheme.background,
+        ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: scheme.surfaceContainerHighest,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: scheme.outline),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: scheme.outline),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: scheme.primary, width: 1.5),
+          ),
         ),
         cardTheme: CardThemeData(
-          color: scheme.surface,
+          color: scheme.surfaceContainerHigh,
           surfaceTintColor: scheme.surfaceTint,
           elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: scheme.primary,
+            foregroundColor: scheme.onPrimary,
+            disabledBackgroundColor: scheme.surfaceContainerHighest,
+            disabledForegroundColor: scheme.onSurface.withValues(alpha: 0.38),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: scheme.primary,
+            foregroundColor: scheme.onPrimary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
         ),
       ),
       home: const _Home(),

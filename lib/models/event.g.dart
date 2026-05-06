@@ -18,11 +18,11 @@ class EventAdapter extends TypeAdapter<Event> {
     };
     return Event(
       id: fields[0] as String,
-      managerId: fields[1] as String? ?? '',
-      name: fields[2] as String,
-      dateTime: fields[3] as DateTime,
-      maxCapacity: fields[4] as int,
-      checkedInCount: fields[5] as int,
+      name: fields[1] as String,
+      dateTime: fields[2] as DateTime,
+      maxCapacity: fields[3] as int,
+      checkedInCount: fields[4] as int,
+      managerId: fields[5] as String? ?? '',
     );
   }
 
@@ -33,15 +33,15 @@ class EventAdapter extends TypeAdapter<Event> {
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.managerId)
-      ..writeByte(2)
       ..write(obj.name)
-      ..writeByte(3)
+      ..writeByte(2)
       ..write(obj.dateTime)
-      ..writeByte(4)
+      ..writeByte(3)
       ..write(obj.maxCapacity)
+      ..writeByte(4)
+      ..write(obj.checkedInCount)
       ..writeByte(5)
-      ..write(obj.checkedInCount);
+      ..write(obj.managerId);
   }
 
   @override

@@ -6,30 +6,30 @@ part 'event.g.dart';
 class Event {
   Event({
     required this.id,
-    required this.managerId,
     required this.name,
     required this.dateTime,
     required this.maxCapacity,
     required this.checkedInCount,
+    this.managerId = '',
   });
 
   @HiveField(0)
   String id;
 
   @HiveField(1)
-  String managerId;
-
-  @HiveField(2)
   String name;
 
-  @HiveField(3)
+  @HiveField(2)
   DateTime dateTime;
 
-  @HiveField(4)
+  @HiveField(3)
   int maxCapacity;
 
-  @HiveField(5)
+  @HiveField(4)
   int checkedInCount;
+
+  @HiveField(5)
+  String managerId;
 
   Event copyWith({
     String? id,

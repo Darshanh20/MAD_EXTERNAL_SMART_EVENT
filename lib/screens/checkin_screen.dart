@@ -39,7 +39,8 @@ class _CheckinScreenState extends State<CheckinScreen> {
     final authProvider = context.watch<AuthProvider>();
     final currentUser = authProvider.currentUser;
     final isManager = authProvider.userRole == UserRole.manager;
-    final isManagerOwner = currentUser != null &&
+    final isManagerOwner =
+        currentUser != null &&
         widget.event.managerId.isNotEmpty &&
         widget.event.managerId == currentUser.id;
 
@@ -138,8 +139,24 @@ class _CheckInTabState extends State<_CheckInTab> {
   final TextEditingController _participantNameController =
       TextEditingController();
 
+  bool _isParticipantIdentityLocked = false;
+
   String? _bannerMessage;
   Color _bannerColor = Colors.green;
+
+  @override
+  void initState() {
+    super.initState();
+    final authProvider = context.read<AuthProvider>();
+    final user = authProvider.currentUser;
+    if (authProvider.userRole == UserRole.participant &&
+        user != null &&
+        user.participantId.isNotEmpty) {
+      _participantIdController.text = user.participantId;
+      _participantNameController.text = user.name;
+      _isParticipantIdentityLocked = true;
+    }
+  }
 
   @override
   void dispose() {
@@ -160,6 +177,30 @@ class _CheckInTabState extends State<_CheckInTab> {
         setState(() => _bannerMessage = null);
       }
     });
+  }
+
+  Future<void> _showQrErrorDialog(String message) async {
+    if (!mounted) {
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Camera Permission Needed'),
+          content: Text(
+            '$message Please grant camera permission in app settings, then try scanning again.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _submitManualCheckIn() async {
@@ -184,8 +225,10 @@ class _CheckInTabState extends State<_CheckInTab> {
           'Check-in successful for ${participantName.isEmpty ? participantId : participantName}',
           Colors.green,
         );
-        _participantIdController.clear();
-        _participantNameController.clear();
+        if (!_isParticipantIdentityLocked) {
+          _participantIdController.clear();
+          _participantNameController.clear();
+        }
         break;
       case CheckInResult.alreadyCheckedIn:
         _showBanner('Already checked in', Colors.red);
@@ -227,11 +270,16 @@ class _CheckInTabState extends State<_CheckInTab> {
         const SizedBox(height: 20),
         TextField(
           controller: _participantIdController,
-          decoration: const InputDecoration(
-            labelText: 'Participant ID',
-            hintText: 'Enter your participant ID',
+          readOnly: _isParticipantIdentityLocked,
+          decoration: InputDecoration(
+            labelText: _isParticipantIdentityLocked
+                ? 'Participant ID (Auto-assigned)'
+                : 'Participant ID',
+            hintText: _isParticipantIdentityLocked
+                ? 'Assigned during signup'
+                : 'Enter your participant ID',
             border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.person),
+            prefixIcon: const Icon(Icons.person),
           ),
         ),
         const SizedBox(height: 16),
@@ -264,35 +312,44 @@ class _CheckInTabState extends State<_CheckInTab> {
             padding: const EdgeInsets.all(20),
             child: QrScannerView(
               onScanned: (scannedId) async {
-                final trimmedId = scannedId.trim();
-                if (trimmedId.isEmpty) {
-                  return;
-                }
+                try {
+                  final trimmedId = scannedId.trim();
+                  if (trimmedId.isEmpty) {
+                    return;
+                  }
 
-                final provider = context.read<EventProvider>();
-                final result = provider.checkInParticipant(
-                  trimmedId,
-                  trimmedId,
-                  widget.event,
-                );
+                  final provider = context.read<EventProvider>();
+                  final result = provider.checkInParticipant(
+                    trimmedId,
+                    trimmedId,
+                    widget.event,
+                  );
 
-                switch (result) {
-                  case CheckInResult.success:
-                    _showBanner(
-                      'Check-in successful for $trimmedId',
-                      Colors.green,
-                    );
-                    break;
-                  case CheckInResult.alreadyCheckedIn:
-                    _showBanner('Already checked in', Colors.red);
-                    break;
-                  case CheckInResult.atCapacity:
-                    _showBanner('Event at full capacity', Colors.red);
-                    break;
-                  case CheckInResult.invalidId:
-                    _showBanner('Participant ID is required', Colors.red);
-                    break;
+                  switch (result) {
+                    case CheckInResult.success:
+                      _showBanner(
+                        'Check-in successful for $trimmedId',
+                        Colors.green,
+                      );
+                      break;
+                    case CheckInResult.alreadyCheckedIn:
+                      _showBanner('Already checked in', Colors.red);
+                      break;
+                    case CheckInResult.atCapacity:
+                      _showBanner('Event at full capacity', Colors.red);
+                      break;
+                    case CheckInResult.invalidId:
+                      _showBanner('Participant ID is required', Colors.red);
+                      break;
+                  }
+                } catch (_) {
+                  await _showQrErrorDialog(
+                    'Unable to process scanned QR code.',
+                  );
                 }
+              },
+              onError: (message) {
+                unawaited(_showQrErrorDialog(message));
               },
             ),
           ),

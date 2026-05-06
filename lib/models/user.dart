@@ -24,6 +24,9 @@ class User extends HiveObject {
   @HiveField(5)
   final DateTime createdAt;
 
+  @HiveField(6)
+  final String participantId;
+
   User({
     required this.id,
     required this.name,
@@ -31,6 +34,7 @@ class User extends HiveObject {
     required this.passwordHash,
     required UserRole role,
     required this.createdAt,
+    this.participantId = '',
   }) : roleString = role.name;
 
   // Convert string back to enum

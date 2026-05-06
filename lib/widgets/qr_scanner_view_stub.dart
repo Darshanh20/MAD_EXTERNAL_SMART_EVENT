@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 class QrScannerView extends StatelessWidget {
-  const QrScannerView({super.key, required this.onScanned});
+  const QrScannerView({super.key, required this.onScanned, this.onError});
 
   final Future<void> Function(String scannedId) onScanned;
+  final void Function(String message)? onError;
 
   @override
   Widget build(BuildContext context) {

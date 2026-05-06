@@ -5,9 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class QrScannerView extends StatefulWidget {
-  const QrScannerView({super.key, required this.onScanned});
+  const QrScannerView({super.key, required this.onScanned, this.onError});
 
   final Future<void> Function(String scannedId) onScanned;
+  final void Function(String message)? onError;
 
   @override
   State<QrScannerView> createState() => _QrScannerViewState();
@@ -32,11 +33,16 @@ class _QrScannerViewState extends State<QrScannerView> {
     }
 
     _processingScan = true;
-    await _qrController?.pauseCamera();
-    await widget.onScanned(scannedId);
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-    await _qrController?.resumeCamera();
-    _processingScan = false;
+    try {
+      await _qrController?.pauseCamera();
+      await widget.onScanned(scannedId);
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      await _qrController?.resumeCamera();
+    } catch (e) {
+      widget.onError?.call('Unable to start camera scanner.');
+    } finally {
+      _processingScan = false;
+    }
   }
 
   @override
@@ -78,11 +84,7 @@ class _QrScannerViewState extends State<QrScannerView> {
         ),
         onPermissionSet: (controller, permission) {
           if (!permission) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Camera permission needed to scan QR codes.'),
-              ),
-            );
+            widget.onError?.call('Camera permission needed to scan QR codes.');
           }
         },
       ),

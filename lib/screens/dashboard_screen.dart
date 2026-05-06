@@ -35,7 +35,11 @@ class DashboardScreen extends StatelessWidget {
   Widget _buildBody(BuildContext context) {
     return Consumer<EventProvider>(
       builder: (context, provider, _) {
-        final activeEvent = provider.activeEvent ?? event;
+        final activeEvent =
+            provider.getEventById(event.id) ??
+            (provider.activeEvent?.id == event.id
+                ? provider.activeEvent!
+                : event);
         final capacity = activeEvent.maxCapacity;
         final checkedIn = activeEvent.checkedInCount;
         final remaining = (capacity - checkedIn).clamp(0, capacity);

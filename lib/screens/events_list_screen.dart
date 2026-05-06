@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/user.dart';
 import '../providers/auth_provider.dart';
 import '../providers/event_provider.dart';
+import '../services/hive_service.dart';
 import 'checkin_screen.dart';
 import 'event_setup_screen.dart';
 import 'login_screen.dart';
@@ -41,6 +42,16 @@ class _EventsListScreenState extends State<EventsListScreen> {
     final authProvider = context.watch<AuthProvider>();
     final eventProvider = context.watch<EventProvider>();
     final isManager = authProvider.userRole == UserRole.manager;
+    final currentUser = authProvider.currentUser;
+    final participantId = authProvider.userRole == UserRole.participant
+        ? currentUser?.participantId ?? ''
+        : '';
+    final registeredEventIds = participantId.isEmpty
+        ? <String>{}
+        : HiveService.instance.participantsBox.values
+              .where((participant) => participant.id == participantId)
+              .map((participant) => participant.eventId)
+              .toSet();
 
     return Scaffold(
       appBar: AppBar(
@@ -106,21 +117,50 @@ class _EventsListScreenState extends State<EventsListScreen> {
                 itemCount: eventProvider.events.length,
                 itemBuilder: (context, index) {
                   final event = eventProvider.events[index];
+                  final alreadyRegistered =
+                      !isManager && registeredEventIds.contains(event.id);
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(
                       title: Text(event.name),
                       subtitle: Text(
-                        '${event.checkedInCount}/${event.maxCapacity} checked in',
+                        alreadyRegistered
+                            ? 'Already registered'
+                            : '${event.checkedInCount}/${event.maxCapacity} checked in',
                       ),
-                      trailing: const Icon(Icons.arrow_forward_ios),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (context) => CheckinScreen(event: event),
-                          ),
-                        );
-                      },
+                      trailing: alreadyRegistered
+                          ? Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: Colors.green.withValues(alpha: 0.35),
+                                ),
+                              ),
+                              child: const Text(
+                                'Already registered',
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            )
+                          : const Icon(Icons.arrow_forward_ios),
+                      onTap: alreadyRegistered
+                          ? null
+                          : () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (context) =>
+                                      CheckinScreen(event: event),
+                                ),
+                              );
+                            },
                     ),
                   );
                 },

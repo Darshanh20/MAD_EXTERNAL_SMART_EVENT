@@ -100,4 +100,28 @@ class EventProvider extends ChangeNotifier {
           participant.name.toLowerCase().contains(normalizedQuery);
     }).toList();
   }
+
+  List<Participant> searchParticipantsForEvent(String eventId, String query) {
+    final eventParticipants = HiveService.instance.getParticipantsForEvent(
+      eventId,
+    );
+    final normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) {
+      return eventParticipants;
+    }
+
+    return eventParticipants.where((participant) {
+      return participant.id.toLowerCase().contains(normalizedQuery) ||
+          participant.name.toLowerCase().contains(normalizedQuery);
+    }).toList();
+  }
+
+  Event? getEventById(String eventId) {
+    for (final event in events) {
+      if (event.id == eventId) {
+        return event;
+      }
+    }
+    return null;
+  }
 }

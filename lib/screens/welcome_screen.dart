@@ -9,6 +9,8 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     // Full-screen gradient background and centered onboarding content.
     return Scaffold(
       body: Container(
@@ -18,7 +20,7 @@ class WelcomeScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF0D47A1), Color(0xFF7B1FA2)],
+            colors: [Color(0xFF0B0C10), Color(0xFF171A20)],
           ),
         ),
         child: SafeArea(
@@ -32,22 +34,22 @@ class WelcomeScreen extends StatelessWidget {
                     // App logo section.
                     CircleAvatar(
                       radius: 48,
-                      backgroundColor: Colors.white.withValues(alpha: 0.18),
+                      backgroundColor: scheme.surfaceContainerHighest,
                       child: const Icon(
                         Icons.rocket_launch,
                         size: 48,
-                        color: Colors.white,
+                        color: Color(0xFFF3E6C2),
                       ),
                     ),
                     const SizedBox(height: 28),
                     // App name and tagline section.
-                    const Text(
+                    Text(
                       'MyApp',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 42,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: scheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -56,7 +58,7 @@ class WelcomeScreen extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
-                        color: Colors.white.withValues(alpha: 0.88),
+                        color: scheme.onSurface.withValues(alpha: 0.78),
                       ),
                     ),
                     const SizedBox(height: 36),
@@ -85,7 +87,7 @@ class WelcomeScreen extends StatelessWidget {
                         );
                       },
                       style: TextButton.styleFrom(
-                        foregroundColor: Colors.white,
+                        foregroundColor: scheme.primary,
                         textStyle: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

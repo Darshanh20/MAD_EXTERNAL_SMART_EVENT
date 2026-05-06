@@ -17,7 +17,8 @@ class HiveService {
   }
 
   Future<void> saveParticipant(Participant participant) async {
-    await participantsBox.put(participant.id, participant);
+    final scopedKey = '${participant.eventId}::${participant.id}';
+    await participantsBox.put(scopedKey, participant);
   }
 
   List<Event> getAllEvents() => eventsBox.values.toList();

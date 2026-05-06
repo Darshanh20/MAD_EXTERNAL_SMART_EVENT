@@ -20,20 +20,27 @@ class AuthService {
     return sha256.convert(password.codeUnits).toString();
   }
 
+  String _generateParticipantId() {
+    // Short human-readable ID while still using UUID randomness.
+    return 'PT-${const Uuid().v4().replaceAll('-', '').substring(0, 8).toUpperCase()}';
+  }
+
   Future<User?> signup({
     required String name,
     required String email,
     required String password,
     required UserRole role,
   }) async {
+    final normalizedEmail = email.trim().toLowerCase();
+
     if (name.trim().isEmpty ||
-        email.trim().isEmpty ||
+        normalizedEmail.isEmpty ||
         password.trim().isEmpty) {
       return null;
     }
 
     final existingUser = usersBox.values.firstWhere(
-      (user) => user.email == email,
+      (user) => user.email.toLowerCase() == normalizedEmail,
       orElse: () => User(
         id: '',
         name: '',
@@ -51,10 +58,13 @@ class AuthService {
     final user = User(
       id: const Uuid().v4(),
       name: name,
-      email: email,
+      email: normalizedEmail,
       passwordHash: _hashPassword(password),
       role: role,
       createdAt: DateTime.now(),
+      participantId: role == UserRole.participant
+          ? _generateParticipantId()
+          : '',
     );
 
     await usersBox.put(user.id, user);
@@ -63,8 +73,12 @@ class AuthService {
   }
 
   Future<User?> login({required String email, required String password}) async {
+    final normalizedEmail = email.trim().toLowerCase();
+
     final user = usersBox.values.firstWhere(
-      (u) => u.email == email && u.passwordHash == _hashPassword(password),
+      (u) =>
+          u.email.toLowerCase() == normalizedEmail &&
+          u.passwordHash == _hashPassword(password),
       orElse: () => User(
         id: '',
         name: '',
